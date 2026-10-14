@@ -47,6 +47,57 @@ fn test_collatz_on_table(tab: &[u64]) -> [bool; TAB_SIZE] {
     answ_tab
 }
 
+fn generate_mini_passing_cookie() -> (f32, String) {
+    let mut cookie = (0.0, String::from("sopów"));
+
+    cookie.0 = 'main: loop {
+        let rand_range = 'range: loop {
+            let zakres: (f32, f32) = (
+                rand::rng().random_range(0.0..=1.0),
+                rand::rng().random_range(0.0..=1.0),
+            );
+            if zakres.0 > zakres.1 {
+                continue;
+            } else if zakres.0 == zakres.1 {
+                break 'main zakres.0;
+            } else {
+                break 'range zakres;
+            }
+        };
+
+        'decyzja: loop {
+            println!(
+                "Wylosowany zakres losowania {}–{}.",
+                rand_range.0, rand_range.1
+            );
+            println!("Losować ponownie? (y/n)");
+
+            let mut input = String::new();
+            io::stdin().read_line(&mut input).unwrap();
+
+            match input.trim() {
+                "y" => break 'decyzja,
+                "n" => {
+                    break 'main rand::rng().random_range(rand_range.0..=rand_range.1);
+                }
+                _ => println!("usage!"),
+            }
+        }
+    };
+
+    cookie
+}
+fn interpret_fortune_cookie(cookie: &(f32, String)) {
+    println!(
+        "Szanse na zdanie przez ciebie {} wynoszą {}%!",
+        cookie.1,
+        cookie.0 * 100.0
+    );
+    if cookie.0 > 90.0 / 100.0 {
+        println!("brawo nerdzie!");
+    }
+}
+
 fn main() {
     let loop_result = loop {
         println!("Podaj liczbę");
@@ -93,4 +144,6 @@ fn main() {
             println!("Program ended by user");
         }
     }
+    let cookie = generate_mini_passing_cookie();
+    interpret_fortune_cookie(&cookie);
 }
