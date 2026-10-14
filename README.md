@@ -1,0 +1,1 @@
+# programowanie-w-jezyku-rust-2026Z-MiNI
