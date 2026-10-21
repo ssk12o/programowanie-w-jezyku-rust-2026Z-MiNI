@@ -81,22 +81,21 @@ impl NumberWithUnit {
     fn mul_in_place(&mut self, other: &Self) {
         self.value *= other.value;
 
-        self.unit = match (self.is_unitless(), other.is_unitless()) {
-            (true, true) => "".to_string(),
-            (true, false) => other.unit.clone(),
-            (false, true) => self.unit.clone(),
-            (false, false) => format!("{}*{}", self.unit, other.unit),
-        };
+        self.unit = NumberWithUnit::calculate_unit(self, other, "*");
     }
     fn div_in_place(&mut self, other: &Self) {
         self.value /= other.value;
 
-        self.unit = match (self.is_unitless(), other.is_unitless()) {
+        self.unit = NumberWithUnit::calculate_unit(self, other, "/")
+    }
+
+    fn calculate_unit(nwu1: &NumberWithUnit, nwu2: &NumberWithUnit, action: &str) -> String {
+        match (nwu1.is_unitless(), nwu2.is_unitless()) {
             (true, true) => "".to_string(),
-            (true, false) => other.unit.clone(),
-            (false, true) => self.unit.clone(),
-            (false, false) => format!("{}/{}", self.unit, other.unit),
-        };
+            (true, false) => nwu2.unit.clone(),
+            (false, true) => nwu1.unit.clone(),
+            (false, false) => format!("{}{action}{}", nwu1.unit, nwu2.unit),
+        }
     }
 }
 
@@ -153,7 +152,8 @@ fn main() {
     let distance = NumberWithUnit::with_unit(10.0, "m".to_string());
     let time = NumberWithUnit::with_unit(10.0, "s".to_string());
 
-    let speed = distance.clone().div(time);
+    let speed = distance.clone().div(time.clone());
+    println!("distance is {distance:?}, time is {time:?}, so speed is {speed:?}.");
 
     let table_of_vals = [
         NumberWithUnit::unitless(1.0),
