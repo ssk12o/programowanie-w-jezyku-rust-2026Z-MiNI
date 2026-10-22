@@ -2,21 +2,15 @@
 
 Repozytorium zawiera rozwiązania zadań laboratoryjnych z **Programowania w Języku Rust** z semestru zimowego roku 2026 które realizuję na wydziale MiNI.
 
-<!-- ## Zawartość -->
-<!---->
-<!---->
-<!-- |  #  | Temat                    |      Katalog     | -->
-<!-- | :-: | :----------------------- | :--------------: | -->
-<!-- |  1  | Programowanie dynamiczne | [01lab](./01lab) | -->
-<!-- |  2  | Grafy                    | [02lab](./02lab) | -->
-<!-- |  3  | Najkrótsze ścieżki       | [03lab](./03lab) | -->
-<!-- |  4  | Przepływy                | [04lab](./04lab) | -->
-<!-- |  5  | Algorytmy z nawrotami    | [05lab](./05lab) | -->
-<!-- |  6  | Geometria obliczeniowa   | [06lab](./06lab) | -->
-<!-- |  7  | Algorytmy tekstowe       | [07lab](./07lab) | -->
-<!-- |  8  | Zadanie dowolne          | [08lab](./08lab) | -->
-<!---->
-<!---->
+## Zawartość
+
+|  #  | Temat                    |      Katalog     |
+| :-: | :----------------------- | :--------------: |
+|  1  | Wprowadzenie, podstawy języka | [lab01](./lab01) |
+|  2  | Własność obiektów i struktury | [lab02](./lab02) |
+|  3  | Algebraiczne Typy Danych i Wzorce | [lab03](./lab03) |
+
+
 <!-- ## Legenda -->
 <!---->
 <!-- Każda directory zawiera: -->
