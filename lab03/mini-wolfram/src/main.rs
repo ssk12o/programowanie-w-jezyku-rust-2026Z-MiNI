@@ -1,8 +1,5 @@
-use std::fmt::format;
-
 use crate::Const::Numeric;
 
-#[allow(dead_code)]
 #[derive(Clone, Copy, Debug, PartialEq)]
 enum Var {
     X,
@@ -10,7 +7,6 @@ enum Var {
     Z,
 }
 
-#[allow(dead_code)]
 impl Var {
     fn to_string(&self) -> String {
         match self {
@@ -21,14 +17,12 @@ impl Var {
     }
 }
 
-#[allow(dead_code)]
 #[derive(Clone, Debug)]
 enum Const {
     Numeric(i64),
     Named(String),
 }
 
-#[allow(dead_code)]
 impl Const {
     fn to_string(&self) -> String {
         match self {
@@ -38,7 +32,6 @@ impl Const {
     }
 }
 
-#[allow(dead_code)]
 #[derive(Clone, Debug)]
 enum E {
     Add(Box<E>, Box<E>),
@@ -50,7 +43,6 @@ enum E {
     Var(Var),
 }
 
-#[allow(dead_code)]
 impl E {
     fn add(a: Box<Self>, b: Box<Self>) -> Box<Self> {
         Box::new(E::Add(a, b))
@@ -99,7 +91,7 @@ impl E {
             E::Add(a, b) => E::add(a.diff(by), b.diff(by)),
             E::Neg(e) => E::neg(e.diff(by)),
             E::Mul(a, b) => E::add(E::mul(a.clone().diff(by), b.clone()), E::mul(a, b.diff(by))),
-            E::Inv(e) => E::neg(E::mul(E::inv(E::mul(e.clone(), e.clone())), e.diff(by))),
+            E::Inv(e) => E::mul(E::neg(E::inv(E::mul(e.clone(), e.clone()))), e.diff(by)),
             E::Const(_) => E::constant(Const::Numeric(0)),
             E::Func { name, arg } => E::mul(
                 E::func(format!("{}_{}", name, by.to_string()), arg.clone()),
@@ -109,25 +101,117 @@ impl E {
                 if var == by {
                     E::constant(Numeric(1))
                 } else {
-                    E::var(var)
+                    E::constant(Numeric(0))
                 }
             }
         }
     }
 
-    // fn unpack_inv_inv(self) -> Option<Box<Self>> {}
-    //
-    // fn uninv(self: Box<Self>) -> Box<Self> {}
-    //
-    // fn unpack_neg_neg(self) -> Option<Box<Self>> {}
-    //
-    // fn unneg(self: Box<Self>) -> Box<Self> {}
-    //
-    // fn substitute(self, name: &str, value: Box<Self>) -> Box<Self> {}
+    fn unpack_inv_inv(self) -> Option<Box<Self>> {
+        let Self::Inv(outer) = self else {
+            return None;
+        };
+        let Self::Inv(inner) = *outer else {
+            return None;
+        };
+
+        Some(inner)
+    }
+
+    fn uninv(self: Box<Self>) -> Box<Self> {
+        let mut exp = self;
+
+        while let Some(inner) = E::unpack_inv_inv(*exp.clone()) {
+            exp = inner;
+        }
+
+        exp
+    }
+
+    fn unpack_neg_neg(self) -> Option<Box<Self>> {
+        if let E::Neg(outer) = self
+            && let E::Neg(inner) = *outer
+        {
+            return Some(inner);
+        }
+        None
+    }
+
+    fn unneg(self: Box<Self>) -> Box<Self> {
+        let mut exp = self;
+
+        while let Some(inner) = E::unpack_neg_neg(*exp.clone()) {
+            exp = inner;
+        }
+
+        exp
+    }
+
+    fn substitute(self, name: &str, value: Box<Self>) -> Box<Self> {
+        match self {
+            Self::Const(Const::Named(n)) if n == name => value,
+
+            Self::Add(e1, e2) => E::add(
+                e1.substitute(name, value.clone()),
+                e2.substitute(name, value),
+            ),
+
+            Self::Neg(e) => E::neg(e.substitute(name, value)),
+
+            Self::Mul(e1, e2) => E::mul(
+                e1.substitute(name, value.clone()),
+                e2.substitute(name, value),
+            ),
+
+            Self::Inv(e) => E::inv(e.substitute(name, value)),
+
+            Self::Func {
+                name: func_name,
+                arg,
+            } => E::func(func_name, arg.substitute(name, value)),
+
+            other => Box::new(other),
+        }
+    }
 }
 
 fn main() {
-    println!("hello adv!")
+    let expr1 = E::add(E::constant(Const::Numeric(2)), E::var(Var::X));
+    let expr2 = E::mul(E::neg(E::var(Var::Y)), E::inv(E::var(Var::Z)));
+
+    let complex = E::add(E::func("f".into(), expr1), E::func("g".into(), expr2));
+
+    println!("exp: {}", complex.to_string());
+    println!("num of arg: {}", complex.arg_count());
+
+    let d = complex.clone().diff(Var::X);
+    println!("d/dX:                 {}", d.to_string());
+
+    let with_named = E::add(E::constant(Const::Named("a".into())), E::var(Var::X));
+    let substituted = with_named.substitute("a", E::constant(Const::Numeric(10)));
+    println!("a=10: {}", substituted.to_string());
+
+    let double_inv = E::inv(E::inv(E::var(Var::X)));
+    println!("1/(1/(X)) = {}", double_inv.uninv().to_string());
+
+    let double_neg = E::neg(E::neg(E::neg(E::neg(E::var(Var::Y)))));
+    println!("-(-(-(-(Y)))) = {}", double_neg.unneg().to_string());
+
+    let di = E::inv(E::inv(E::var(Var::Z)));
+    if let Some(inner) = di.unpack_inv_inv() {
+        println!("unpack_inv_inv = {}", inner.to_string());
+    }
+
+    let dn = E::neg(E::neg(E::var(Var::Z)));
+    if let Some(inner) = dn.unpack_neg_neg() {
+        println!("unpack_neg_neg  = {}", inner.to_string());
+    }
+
+    println!("Var::X = {}", Var::X.to_string());
+    println!(
+        "Const::Named(\"k\") = {}",
+        Const::Named("k".into()).to_string()
+    );
 }
 
 #[cfg(test)]
