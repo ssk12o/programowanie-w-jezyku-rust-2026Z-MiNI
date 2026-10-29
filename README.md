@@ -18,7 +18,6 @@ Repozytorium zawiera rozwiązania zadań laboratoryjnych z **Programowania w Ję
 <!-- |  10 | Makra deklaratywne i zaawansowane typy | [lab03](./lab03) | -->
 <!-- |  11 | Marka proceduralne, sekcje niebezpieczne | [lab03](./lab03) | -->
 
-
 <!-- ## Legenda -->
 <!---->
 <!-- Każda directory zawiera: -->
@@ -29,3 +28,7 @@ Repozytorium zawiera rozwiązania zadań laboratoryjnych z **Programowania w Ję
 <!-- ├── LabXX.pdf     # treść  -->
 <!-- └── Program.cs    # program testowy / uruchomieniowy -->
 <!-- ``` -->
+
+## Ferris
+
+![Ferris](assets/ferris-rust.gif)
