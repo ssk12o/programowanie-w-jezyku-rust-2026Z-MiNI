@@ -1,4 +1,45 @@
-fn main() {}
+use std::{collections::BTreeSet, num::NonZero, time, vec};
+
+#[allow(dead_code)]
+fn divisors(n: NonZero<u32>) -> BTreeSet<NonZero<u32>> {
+    let mut seet: BTreeSet<NonZero<u32>> = BTreeSet::new();
+
+    let n = n.get();
+    for divisor in 1..=n {
+        if n.is_multiple_of(divisor) {
+            seet.insert(NonZero::new(divisor).unwrap());
+        }
+    }
+
+    seet
+}
+
+fn assert_sorted(vec: &[u32]) {
+    let iter = vec.windows(2);
+    for window in iter {
+        if window[0] > window[1] {
+            panic!("vec must be sorted");
+        }
+    }
+}
+
+fn benchmark() {
+    let t = time::Instant::now();
+    for i in 1..=100 {
+        divisors(NonZero::new(i).unwrap());
+    }
+    let b = t.elapsed();
+}
+
+fn main() {
+    let vec_sorted: Vec<u32> = vec![1, 2, 3, 4];
+    let vec_unsorted: Vec<u32> = vec![2, 1, 3, 7];
+
+    assert_sorted(&vec_sorted);
+    assert_sorted(&vec_unsorted);
+
+    println!("hello my firend");
+}
 
 #[cfg(test)]
 mod tests {
