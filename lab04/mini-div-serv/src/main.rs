@@ -1,4 +1,4 @@
-use std::{collections::BTreeSet, num::NonZero, time, vec};
+use std::{collections::BTreeSet, hint::black_box, num::NonZero, time, vec};
 
 #[allow(dead_code)]
 fn divisors(n: NonZero<u32>) -> BTreeSet<NonZero<u32>> {
@@ -23,12 +23,16 @@ fn assert_sorted(vec: &[u32]) {
     }
 }
 
+#[allow(dead_code)]
 fn benchmark() {
+    let num_of_tests = 100;
     let t = time::Instant::now();
-    for i in 1..=100 {
-        divisors(NonZero::new(i).unwrap());
+    for i in 1..=num_of_tests {
+        black_box(divisors(NonZero::new(i).unwrap()));
     }
-    let b = t.elapsed();
+    let duration = t.elapsed();
+    let avg = duration.as_millis() as f64 / num_of_tests as f64;
+    println!("average_time => {}", avg);
 }
 
 fn main() {
