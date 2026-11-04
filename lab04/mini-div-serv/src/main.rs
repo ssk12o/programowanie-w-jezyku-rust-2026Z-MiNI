@@ -1,4 +1,15 @@
-use std::{collections::BTreeSet, hint::black_box, num::NonZero, time, vec};
+use std::{
+    collections::BTreeSet,
+    fs::read_dir,
+    hint::black_box,
+    io::{self, Read, Write},
+    net::{TcpListener, TcpStream},
+    num::NonZero,
+    os::unix::ffi::OsStrExt,
+    path::PathBuf,
+    str::FromStr,
+    time, vec,
+};
 
 #[allow(dead_code)]
 fn divisors(n: NonZero<u32>) -> BTreeSet<NonZero<u32>> {
@@ -23,7 +34,6 @@ fn assert_sorted(vec: &[u32]) {
     }
 }
 
-#[allow(dead_code)]
 fn benchmark() {
     let num_of_tests = 100;
     let t = time::Instant::now();
@@ -31,18 +41,123 @@ fn benchmark() {
         black_box(divisors(NonZero::new(i).unwrap()));
     }
     let duration = t.elapsed();
-    let avg = duration.as_millis() as f64 / num_of_tests as f64;
+    let avg = duration.as_secs_f64() * 1000.0 / num_of_tests as f64;
     println!("average_time => {}", avg);
 }
 
+fn bulk_write(stream: &mut TcpStream, buf: &[u8]) -> io::Result<()> {
+    let mut remaining = buf.len();
+    let mut m_buf = buf;
+    while remaining > 0 {
+        match stream.write(m_buf) {
+            Ok(n) => {
+                remaining -= n;
+                m_buf = &m_buf[n..];
+            }
+            Err(e) if e.kind() == io::ErrorKind::Interrupted => continue,
+            Err(e) => return Err(e),
+        }
+    }
+
+    Ok(())
+}
+
+fn bulk_read(stream: &mut TcpStream, size: usize) -> io::Result<Vec<u8>> {
+    let mut read_v = vec![0u8; size];
+    let mut read = 0;
+
+    while read < size {
+        match stream.read(&mut read_v[read..]) {
+            Ok(0) => {
+                return Err(io::Error::new(io::ErrorKind::UnexpectedEof, "eof"));
+            }
+            Ok(n) => read += n,
+            Err(e) if e.kind() == io::ErrorKind::Interrupted => continue,
+            Err(e) => return Err(e),
+        }
+    }
+
+    Ok(read_v)
+}
+
+fn run_serv(addres: &str) -> io::Result<()> {
+    println!("Server starts.");
+    println!("Listening at {addres}");
+
+    let listener = TcpListener::bind(addres)?;
+
+    for stream in listener.incoming() {
+        handle_client(stream?)?;
+    }
+
+    Ok(())
+}
+
+fn handle_client(mut stream: TcpStream) -> io::Result<()> {
+    let len_bytes = bulk_read(&mut stream, 4)?;
+    let path_len = u32::from_be_bytes(len_bytes.as_slice().try_into().unwrap()) as usize;
+
+    let path = bulk_read(&mut stream, path_len)?;
+    let str_path = match String::from_utf8(path) {
+        Ok(p) => p,
+        Err(e) => {
+            bulk_write(&mut stream, "Bad path\n".as_bytes())?;
+            println!("Error {e}");
+            return Ok(());
+        }
+    };
+
+    let pathbuf_path = match PathBuf::from_str(&str_path) {
+        Ok(p) => p,
+        Err(e) => {
+            bulk_write(&mut stream, "Bad path\n".as_bytes())?;
+            println!("Error {e}");
+            return Ok(());
+        }
+    };
+
+    let dir_itr = match read_dir(pathbuf_path) {
+        Ok(p) => p,
+        Err(e) => {
+            bulk_write(&mut stream, "Bad dir\n".as_bytes())?;
+            println!("Error {e}");
+            return Ok(());
+        }
+    };
+
+    let mut output_vec = Vec::new();
+
+    for entry in dir_itr {
+        match entry {
+            Ok(dir_entry) => {
+                output_vec.append(&mut dir_entry.file_name().as_bytes().to_vec());
+                output_vec.append(&mut "\n".as_bytes().to_vec());
+            }
+            Err(e) => {
+                bulk_write(&mut stream, "Bad dir item\n".as_bytes())?;
+                println!("Error {e}");
+                return Ok(());
+            }
+        }
+    }
+
+    bulk_write(&mut stream, &output_vec)?;
+
+    Ok(())
+}
+
+#[allow(unused_variables)]
 fn main() {
     let vec_sorted: Vec<u32> = vec![1, 2, 3, 4];
     let vec_unsorted: Vec<u32> = vec![2, 1, 3, 7];
 
     assert_sorted(&vec_sorted);
-    assert_sorted(&vec_unsorted);
+    // assert_sorted(&vec_unsorted);
 
     println!("hello my firend");
+
+    benchmark();
+    run_serv("127.0.0.1:8080").unwrap();
 }
 
 #[cfg(test)]
