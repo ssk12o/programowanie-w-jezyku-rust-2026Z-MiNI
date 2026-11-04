@@ -130,8 +130,8 @@ fn handle_client(mut stream: TcpStream) -> io::Result<()> {
     for entry in dir_itr {
         match entry {
             Ok(dir_entry) => {
-                output_vec.append(&mut dir_entry.file_name().as_bytes().to_vec());
-                output_vec.append(&mut "\n".as_bytes().to_vec());
+                output_vec.extend_from_slice(dir_entry.file_name().as_bytes());
+                output_vec.extend_from_slice("\n".as_bytes());
             }
             Err(e) => {
                 bulk_write(&mut stream, "Bad dir item\n".as_bytes())?;
