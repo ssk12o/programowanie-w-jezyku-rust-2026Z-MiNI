@@ -2,7 +2,29 @@ use std::collections::HashMap;
 
 type Context = HashMap<&'static str, u64>;
 
-fn main() {}
+#[allow(dead_code)]
+trait Expr {
+    fn exec_expr(&mut self, contex: &Context) -> u64;
+}
+
+#[allow(dead_code)]
+trait Stmt {
+    fn exec_stmt(&mut self, contex: &Context);
+}
+
+#[allow(dead_code)]
+struct Print<T: Expr> {
+    inner: T,
+}
+
+#[allow(dead_code)]
+fn print<T: Expr>(inner: T) -> Print<T> {
+    Print { inner }
+}
+
+fn main() {
+    println!("Hello bro!");
+}
 
 #[cfg(test)]
 mod tests {
